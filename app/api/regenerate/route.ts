@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { checkQuota, getQuotaStatus, incrementQuota } from "@/lib/quota";
-import { extractPdfTextFromBuffer, generateFlashcardsFromText } from "@/lib/flashcard-generator";
+import {
+  extractPdfTextFromBuffer,
+  generateFlashcardsFromText,
+} from "@/lib/flashcard-generator";
 
 const Body = z.object({
   fileUrl: z.string().url(),
-  count: z.number().int().min(1).max(10).optional(), 
+  count: z.number().int().min(1).max(10).optional(),
 });
 
 export async function POST(req: Request) {
@@ -27,7 +30,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid file URL" }, { status: 400 });
   }
 
-  const res = await fetch(fileUrl);
+  const res = await fetch(fileUrl, { cache: "no-store", next: { revalidate: 0 } });
   if (!res.ok) return NextResponse.json({ error: "Failed to download file" }, { status: 400 });
 
   const contentLength = res.headers.get("content-length");
@@ -39,8 +42,12 @@ export async function POST(req: Request) {
   const text = await extractPdfTextFromBuffer(buf);
   if (!text.trim()) return NextResponse.json({ error: "Empty PDF text" }, { status: 400 });
 
-  const flashcards = await generateFlashcardsFromText(text, count);
-  await incrementQuota(userId);
+  // Use random seed to vary results even through the API
+  const flashcards = await generateFlashcardsFromText(text, count, {
+    temperature: 0.4,
+    seed: Math.floor(Math.random() * 2_147_483_647),
+  });
 
+  await incrementQuota(userId);
   return NextResponse.json({ flashcards });
 }

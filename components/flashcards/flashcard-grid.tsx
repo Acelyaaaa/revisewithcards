@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from 'lucide-react';
-import ExportButtons from '@/components/flashcards/export-buttons';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Shuffle, RotateCcw } from "lucide-react";
+import ExportButtons from "@/components/flashcards/export-buttons";
 
 export type Card = { question: string; answer: string };
 
 export default function FlashcardGrid({
   cards,
-  fileName = 'Flashcards',
+  fileName = "Flashcards",
   onRegenerate,
 }: {
   cards: Card[];
@@ -17,12 +17,18 @@ export default function FlashcardGrid({
   onRegenerate?: () => void;
 }) {
   const [idx, setIdx] = useState(0);
+
+  // ⬇ Reset to first card whenever a new set arrives
+  useEffect(() => {
+    setIdx(0);
+  }, [cards]);
+
   const total = cards.length;
   const canPrev = idx > 0;
   const canNext = idx < total - 1;
 
-  const prev = () => setIdx(i => Math.max(i - 1, 0));
-  const next = () => setIdx(i => Math.min(i + 1, total - 1));
+  const prev = () => setIdx((i) => Math.max(i - 1, 0));
+  const next = () => setIdx((i) => Math.min(i + 1, total - 1));
   const random = () => setIdx(Math.floor(Math.random() * total));
 
   const card = cards[idx];
@@ -50,12 +56,12 @@ export default function FlashcardGrid({
         <ExportButtons fileName={fileName} cards={cards} />
       </div>
 
-      
+      {/* Progress */}
       <div className="mb-3 text-sm text-gray-500 text-center">
         {idx + 1} / {total}
       </div>
 
-      
+      {/* Card */}
       <Flashcard question={card.question} answer={card.answer} />
     </div>
   );
@@ -66,25 +72,24 @@ function Flashcard({ question, answer }: Card) {
 
   return (
     <div
-      onClick={() => setFlipped(s => !s)}
+      onClick={() => setFlipped((s) => !s)}
       className="relative w-full h-64 cursor-pointer perspective"
     >
       <div
         className={`relative h-full w-full transition-transform duration-700 preserve-3d ${
-          flipped ? 'rotate-y-180' : ''
+          flipped ? "rotate-y-180" : ""
         }`}
       >
-        
+        {/* Front */}
         <div className="absolute inset-0 backface-hidden flex flex-col justify-center items-center bg-white border rounded-xl shadow-md p-6">
-          <p className="text-gray-900 text-lg font-medium">{question}</p>
+          <p className="text-gray-900 text-lg font-medium text-center">{question}</p>
           <p className="mt-3 text-xs text-gray-400">Click to reveal answer</p>
         </div>
 
-       
+        {/* Back */}
         <div className="absolute inset-0 backface-hidden rotate-y-180 flex flex-col justify-center items-center bg-rose-50 border rounded-xl shadow-md p-6">
           <p className="text-sm text-gray-600 mb-2">Answer</p>
           <p className="text-gray-900 font-medium text-center">{answer}</p>
-          <p className="mt-3 text-xs text-gray-400"></p>
         </div>
       </div>
     </div>

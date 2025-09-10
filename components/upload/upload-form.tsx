@@ -24,29 +24,27 @@ export default function UploadForm() {
   const [lastFileUrl, setLastFileUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // IMPORTANT: ensure callbacks return void (don’t return toast IDs)
   const { startUpload } = useUploadThing("pdfUploader", {
     onUploadError: (err) => {
       const errorMessage = err.message || "Upload failed. Please try again.";
       toast.error("Upload failed", {
-        description:
-          errorMessage.length > 100 ? "Please try again" : errorMessage,
+        description: errorMessage.length > 100 ? "Please try again" : errorMessage,
       });
       setIsLoading(false);
       setError("Upload failed. Please try again.");
-      return; // <-- return void
+      return;
     },
     onUploadBegin: () => {
       toast.info("Upload started");
-      return; // <-- return void
+      return;
     },
     onClientUploadComplete: () => {
       toast.success("Upload successful!");
-      return; // <-- return void
+      return;
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setIsLoading(true);
     setCards(null);
@@ -61,18 +59,13 @@ export default function UploadForm() {
         setIsLoading(false);
         return;
       }
-
       if (file.type !== "application/pdf") {
         toast.error("Invalid file type");
         setIsLoading(false);
         return;
       }
-
-      // 10 MB max
       if (file.size > 10 * 1024 * 1024) {
-        toast.error("File too large", {
-          description: "Maximum file size is 10MB",
-        });
+        toast.error("File too large", { description: "Maximum file size is 10MB" });
         setIsLoading(false);
         return;
       }
@@ -86,7 +79,7 @@ export default function UploadForm() {
         return;
       }
 
-      // UploadThing v8+: prefer ufsUrl; fall back to url for older typings
+      // UploadThing v8+: use ufsUrl; fallback to url for older versions
       const fileUrl = (res[0] as any).ufsUrl ?? (res[0] as any).url;
       if (!fileUrl || typeof fileUrl !== "string") {
         toast.error("Could not retrieve file URL");
@@ -103,11 +96,9 @@ export default function UploadForm() {
       });
 
       if (!gen.success) {
-        const errorMessage =
-          gen.message || "Generation failed. Please try again.";
+        const errorMessage = gen.message || "Generation failed. Please try again.";
         toast.error("Generation failed", {
-          description:
-            errorMessage.length > 100 ? "Please try again" : errorMessage,
+          description: errorMessage.length > 100 ? "Please try again" : errorMessage,
         });
         setError(errorMessage);
         setIsLoading(false);
@@ -124,9 +115,9 @@ export default function UploadForm() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleSave = async () => {
+  async function handleSave() {
     if (!cards?.length) return;
     setIsLoading(true);
 
@@ -141,8 +132,7 @@ export default function UploadForm() {
       } else {
         const errorMessage = res.message || "Save failed. Please try again.";
         toast.error("Save failed", {
-          description:
-            errorMessage.length > 100 ? "Please try again" : errorMessage,
+          description: errorMessage.length > 100 ? "Please try again" : errorMessage,
         });
       }
     } catch (e) {
@@ -151,11 +141,20 @@ export default function UploadForm() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleRegenerate = async () => {
+  /**
+   * Regenerate: ask the server for a *new* set.
+   * Sends the current questions as an avoid-list so the LLM picks different ones.
+   * If overlap is still high, try one more time with a larger avoid list.
+   */
+  async function handleRegenerate() {
     if (!lastFileUrl) {
       toast.error("No file to regenerate from");
+      return;
+    }
+    if (!cards?.length) {
+      toast.info("Generate flashcards first");
       return;
     }
 
@@ -163,25 +162,47 @@ export default function UploadForm() {
     setError(null);
 
     try {
-      const gen = await regenerateFlashcardsAction(
+      const previous = Array.from(new Set(cards.map((c) => c.question)));
+
+      // First attempt
+      let gen = await regenerateFlashcardsAction(
         lastFileUrl,
         fileName || "document.pdf",
-        10
+        10,
+        previous
       );
 
       if (!gen.success) {
-        const errorMessage =
-          gen.message || "Regeneration failed. Please try again.";
+        const errorMessage = gen.message || "Regeneration failed. Please try again.";
         toast.error("Regeneration failed", {
-          description:
-            errorMessage.length > 100 ? "Please try again" : errorMessage,
+          description: errorMessage.length > 100 ? "Please try again" : errorMessage,
         });
         setError(errorMessage);
         return;
       }
 
-      setCards(gen.data!.cards);
+      let fresh = gen.data!.cards;
+
+      // If the overlap is still too high, try once more with a bigger avoid set
+      const overlap = overlapCount(previous, fresh.map((c) => c.question));
+      if (overlap >= 8) {
+        const biggerAvoid = Array.from(
+          new Set([...previous, ...fresh.map((c) => c.question)])
+        );
+        gen = await regenerateFlashcardsAction(
+          lastFileUrl,
+          fileName || "document.pdf",
+          10,
+          biggerAvoid
+        );
+        if (gen.success) {
+          fresh = gen.data!.cards;
+        }
+      }
+
+      setCards(fresh);
       toast.success("New flashcards generated!");
+      // FlashcardGrid resets its internal index because the cards array reference changed
     } catch (e) {
       console.error(e);
       toast.error("Unexpected error during regeneration");
@@ -189,15 +210,15 @@ export default function UploadForm() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
-  const handleUploadAnother = () => {
+  function handleUploadAnother() {
     setCards(null);
     setFileName("");
     setLastFileUrl("");
     setError(null);
     formRef.current?.reset();
-  };
+  }
 
   return (
     <div className="flex flex-col items-center gap-10 w-full">
@@ -213,8 +234,11 @@ export default function UploadForm() {
       {cards && (
         <div className="w-full max-w-5xl">
           <h3 className="mb-6 text-2xl font-bold text-center">Your Flashcards</h3>
-          <FlashcardGrid cards={cards} />
 
+          {/* Flashcard viewer */}
+          <FlashcardGrid cards={cards} fileName={fileName || "Flashcards"} />
+
+          {/* Actions */}
           <div className="mt-8 flex flex-wrap gap-4 justify-center">
             <Button
               onClick={handleSave}
@@ -249,4 +273,12 @@ export default function UploadForm() {
       )}
     </div>
   );
+}
+
+/** count how many items two arrays share (case-insensitive) */
+function overlapCount(a: string[], b: string[]) {
+  const setA = new Set(a.map((s) => s.toLowerCase()));
+  let n = 0;
+  for (const x of b) if (setA.has(x.toLowerCase())) n++;
+  return n;
 }

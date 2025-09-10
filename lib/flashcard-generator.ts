@@ -1,135 +1,119 @@
-// lib/flashcard-generator.ts
-import "server-only";
-import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+"use server";
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { loadPdfJs } from "./pdfjs-node";
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-pro",
-  generationConfig: { temperature: 0.35 },
-});
-
-/**
- * Extract text from a PDF:
- * 1) Try pdf-parse (fast).
- * 2) If empty, fall back to pdfjs-dist with Node-safe polyfills.
- * Throws only when truly no text is embedded (image-only scans).
- */
+/** Extract text with pdf-parse (works on Vercel). */
 export async function extractPdfTextFromBuffer(bytes: Uint8Array): Promise<string> {
-  // ----- First pass: pdf-parse
   try {
     const pdfParse = await import("pdf-parse");
     const data = await pdfParse.default(Buffer.from(bytes));
-    const text = (data?.text ?? "").trim();
-    if (text) return text;
-    // otherwise continue to pdf.js
-  } catch {
-    // ignore; fall through to pdf.js
-  }
-
-  // ----- Fallback: pdfjs-dist (Node safe)
-  try {
-    const pdfjsLib = await loadPdfJs();
-    const loadingTask = pdfjsLib.getDocument({
-      data: bytes,
-      disableWorker: true,
-      isEvalSupported: false,
-      disableFontFace: true,
-      disableRange: true,
-      disableStream: true,
-      useSystemFonts: true,
-      maxImageSize: -1,
-    });
-
-    const pdf = await loadingTask.promise;
-    const pages: string[] = [];
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      try {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent({
-          normalizeWhitespace: true,
-          disableCombineTextItems: false,
-        });
-        const pageText = textContent.items
-          .map((item: any) => (item?.str as string) || "")
-          .join(" ");
-        if (pageText.trim()) pages.push(pageText);
-      } catch (e) {
-        console.warn(`[pdfjs] failed to read page ${i}:`, e);
-      }
-    }
-
-    const text = pages.join("\n\n").trim();
-    if (!text) {
-      throw new Error("No extractable text found in the PDF. If this is a scanned/image-only PDF, enable OCR.");
-    }
-    return text;
+    return (data?.text ?? "").trim();
   } catch (err) {
-    console.error("PDF extraction error:", err);
-    throw new Error("Failed to extract text from PDF");
+    console.error("pdf-parse failed:", err);
+    return "";
   }
 }
 
-export async function generateFlashcardsFromText(text: string, targetCount = 10) {
-  try {
-    if (!text || text.trim().length < 100) {
-      throw new Error("Text content is too short to generate meaningful flashcards");
-    }
+type GenOpts = {
+  avoidQuestions?: string[];
+  mode?: "default" | "regenerate";
+  temperature?: number;
+  minAnswerWords?: number;
+  maxAnswerWords?: number;
+  seed?: number;
+};
 
-    const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1600,
-      chunkOverlap: 200,
+/** Generates cards. Third `opts` arg is supported (to fix the “expected 1-2 args” error). */
+export async function generateFlashcardsFromText(
+  text: string,
+  count = 10,
+  opts: GenOpts = {}
+) {
+  const cleaned = collapseWhitespace(text);
+  if (!cleaned) return [];
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return naiveCards(cleaned, count, opts.avoidQuestions);
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const prompt = [
+      "Create concise Q/A flashcards from the following document.",
+      `Return exactly ${count} items in JSON array with fields "question" and "answer".`,
+      opts.avoidQuestions?.length
+        ? `Avoid these questions: ${JSON.stringify(opts.avoidQuestions)}.`
+        : "",
+      `Answers should be ${opts.minAnswerWords ?? 40}-${opts.maxAnswerWords ?? 120} words.`,
+      "Document:",
+      "```",
+      cleaned.slice(0, 18000),
+      "```",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const resp = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: opts.temperature ?? 0.3,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 4000,
+        // seed is not officially supported in all routes, but we still vary inputs via prompt anyway.
+      },
     });
 
-    const chunks = await splitter.splitText(text || "");
-    const excerpts = chunks.slice(0, 5).join("\n\n---\n\n");
+    const txt = resp.response.text();
+    const parsed = tryParseCards(txt);
+    if (Array.isArray(parsed) && parsed.length) return parsed.slice(0, count);
 
-    const prompt = `
-You are an expert educational content creator specializing in high-quality study flashcards.
-
-Create exactly ${targetCount} question & answer flashcards based ONLY on the text below.
-Return ONLY a valid JSON array in this exact format:
-[
-  {"question":"...", "answer":"..."},
-  {"question":"...", "answer":"..."}
-]
-
-Rules:
-- Focus on conceptual understanding; avoid trivial recall.
-- Answers should be clear and informative (2–5 sentences).
-- No extra commentary or markdown.
-- If context is missing, use: "Insufficient context in provided material".
-
-Text:
-${excerpts}
-`;
-
-    const result = await model.generateContent(prompt);
-    const textResp = (await result.response.text())?.trim() ?? "[]";
-
-    const jsonMatch = textResp.match(/\[\s*{[\s\S]*}\s*\]/);
-    if (!jsonMatch) throw new Error("AI response format invalid");
-
-    const cleaned = jsonMatch[0]
-      .replace(/^```(?:json)?/i, "")
-      .replace(/```$/i, "")
-      .trim();
-
-    const flashcards = JSON.parse(cleaned);
-    if (!Array.isArray(flashcards)) throw new Error("AI response is not an array");
-
-    for (const card of flashcards) {
-      if (!card?.question || !card?.answer) throw new Error("Invalid flashcard structure");
-      card.question = String(card.question).trim().slice(0, 500);
-      card.answer = String(card.answer).trim().slice(0, 1500);
-    }
-
-    return flashcards.slice(0, targetCount);
-  } catch (error) {
-    console.error("Flashcard generation error:", error);
-    throw new Error("Failed to generate flashcards from text");
+    // fallback if parsing fails
+    return naiveCards(cleaned, count, opts.avoidQuestions);
+  } catch (err) {
+    console.error("Gemini generation failed:", err);
+    return naiveCards(cleaned, count, opts.avoidQuestions);
   }
+}
+
+/* helpers */
+function collapseWhitespace(s: string) {
+  return String(s || "").replace(/\s+/g, " ").trim();
+}
+function tryParseCards(s: string) {
+  try {
+    const match = s.match(/\[[\s\S]*\]/);
+    const json = JSON.parse(match ? match[0] : s);
+    return (json as any[]).map((c) => ({
+      question: String(c.question || "").trim().slice(0, 500),
+      answer: String(c.answer || "").trim().slice(0, 1200),
+    }));
+  } catch {
+    return null;
+  }
+}
+function naiveCards(text: string, count: number, avoid?: string[]) {
+  const banned = new Set((avoid ?? []).map((q) => q.toLowerCase()));
+  const sentences = text.split(/(?<=[.?!])\s+/).filter(Boolean);
+  const cards: { question: string; answer: string }[] = [];
+
+  for (let i = 0; i < sentences.length && cards.length < count; i += 4) {
+    const q = `What is: ${sentences[i].replace(/^[-•\d)\s]+/, "")}`.slice(0, 500);
+    if (banned.has(q.toLowerCase())) continue;
+    const answer = sentences.slice(i + 1, i + 4).join(" ").slice(0, 1000);
+    if (answer) cards.push({ question: q, answer });
+  }
+
+  while (cards.length < count && sentences.length) {
+    const i = Math.floor(Math.random() * sentences.length);
+    const q = `Explain: ${sentences[i].slice(0, 120)}`.slice(0, 500);
+    if (banned.has(q.toLowerCase())) continue;
+    const answer = sentences.slice(i + 1, i + 3).join(" ").slice(0, 800) || "N/A";
+    cards.push({ question: q, answer });
+  }
+
+  return cards.slice(0, count);
 }
