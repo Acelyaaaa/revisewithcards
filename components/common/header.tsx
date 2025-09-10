@@ -13,7 +13,7 @@ export default function Header() {
         >
           <FileText className="w-5 h-5 lg:w-8 text-gray-900 lg:h-8 group-hover:rotate-12 transform transition duration-200 ease-in-out" />
           <span className="font-extrabold lg:text-xl text-gray-900">
-            Sommaire
+            Revisecards
           </span>
         </NavLink>
       </div>
