@@ -1,27 +1,42 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
+    /* Modern JS target that matches Node 18+/Vercel */
+    "target": "ES2022",
     "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
+
+    /* Project ergonomics */
+    "baseUrl": ".",
+    "paths": { "@/*": ["./*"] },
+
+    /* Module/ESM settings recommended by Next */
     "module": "esnext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
+    "verbatimModuleSyntax": true,
+
+    /* TS strictness (keep, these are safe for Next) */
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "noEmit": true,
+    "esModuleInterop": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
+
+    /* Make sure Node types are available in server files/scripts */
+    "types": ["node"],
+
+    /* Next plugin */
+    "plugins": [{ "name": "next" }]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "next.config.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next.config.ts"
+  ],
   "exclude": ["node_modules"]
 }
