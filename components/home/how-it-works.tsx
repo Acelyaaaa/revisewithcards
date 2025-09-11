@@ -1,7 +1,6 @@
 import { BrainCircuit, FileOutput, FileText, MoveRight } from "lucide-react";
-import { ReactNode } from "react";
-
-type Step = { icon: ReactNode; label: String; description: string };
+import type { ReactNode } from "react";
+type Step = { icon: ReactNode; label: string; description: string };
 
 const steps: Step[] = [
   { icon: <FileText size={64} strokeWidth={1.5} />, label: "Upload your PDF", description: "Simply drag and drop your PDF document or click to upload" },
