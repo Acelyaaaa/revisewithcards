@@ -1,7 +1,9 @@
 "use client";
 
 import { forwardRef } from "react";
-import { motion, MotionProps, Transition } from "framer-motion";
+import { motion } from "framer-motion";
+import type { MotionProps, Transition } from "framer-motion";
+
 import { Button } from "@/components/ui/button";
 
 const EASE_OUT: Transition["ease"] = [0.16, 1, 0.3, 1];
