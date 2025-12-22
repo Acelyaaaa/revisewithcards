@@ -1,46 +1,135 @@
-// app/api/billing-portal/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import Stripe from "stripe";
+import { sql } from "@/lib/db";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  
+  // Verify authentication
   const { userId } = await auth();
-  if (!userId) return NextResponse.redirect(new URL("/sign-in", url.origin));
+  if (!userId) {
+    console.log("❌ Unauthorized billing portal access attempt");
+    return NextResponse.redirect(
+      new URL("/sign-in?redirect=/upload", url.origin)
+    );
+  }
 
-  const SECRET = process.env.STRIPE_SECRET_KEY!;
+  const SECRET = process.env.STRIPE_SECRET_KEY;
   const APP_URL = process.env.NEXT_PUBLIC_APP_URL || url.origin;
+
+  if (!SECRET) {
+    console.error("❌ Missing Stripe secret key");
+    return NextResponse.json(
+      { error: "Stripe not configured" },
+      { status: 500 }
+    );
+  }
+
   const stripe = new Stripe(SECRET);
 
- 
-  let customerId: string | undefined;
   try {
-    const subs = await stripe.subscriptions.search({
-      query: `metadata['userId']:'${userId}' AND status:'active'`,
+    console.log(`🔍 Finding Stripe customer for user: ${userId}`);
+    
+    // Method 1: Check our database first
+    let customerId: string | null = null;
+    
+    try {
+      const result = await sql`
+        SELECT stripeCustomerId FROM user_quotas WHERE userId = ${userId}
+      `;
+      const row = Array.isArray(result) ? result[0] : result;
+      customerId = row?.stripecustomerid || row?.stripeCustomerId || null;
+    } catch (dbError) {
+      console.error("❌ Database query failed:", dbError);
+    }
+
+    // Method 2: Search Stripe by active subscriptions
+    if (!customerId) {
+      console.log("🔍 Searching Stripe for active subscriptions...");
+      try {
+        const subscriptions = await stripe.subscriptions.search({
+          query: `metadata['userId']:'${userId}' AND status:'active'`,
+          limit: 1,
+        });
+        
+        if (subscriptions.data.length > 0) {
+          customerId = subscriptions.data[0].customer as string;
+          console.log(`✅ Found customer via subscription: ${customerId}`);
+        }
+      } catch (subError) {
+        console.error("❌ Subscription search failed:", subError);
+      }
+    }
+
+    // Method 3: Search Stripe customers by userId
+    if (!customerId) {
+      console.log("🔍 Searching Stripe customers...");
+      try {
+        const customers = await stripe.customers.search({
+          query: `metadata['userId']:'${userId}'`,
+          limit: 1,
+        });
+        
+        if (customers.data.length > 0) {
+          customerId = customers.data[0].id;
+          console.log(`✅ Found existing customer: ${customerId}`);
+        }
+      } catch (custError) {
+        console.error("❌ Customer search failed:", custError);
+      }
+    }
+
+    // Method 4: Create new customer if none exists
+    if (!customerId) {
+      console.log("➕ Creating new Stripe customer...");
+      const customer = await stripe.customers.create({
+        metadata: { userId },
+      });
+      customerId = customer.id;
+      console.log(`✅ Created new customer: ${customerId}`);
+      
+      // Update our database
+      try {
+        await sql`
+          INSERT INTO user_quotas (userId, stripeCustomerId, plan)
+          VALUES (${userId}, ${customerId}, 'free')
+          ON CONFLICT (userId) DO UPDATE SET
+            stripeCustomerId = EXCLUDED.stripeCustomerId,
+            updatedAt = NOW()
+        `;
+      } catch (dbError) {
+        console.error("❌ Failed to update database with customer ID:", dbError);
+      }
+    }
+
+    // Get active billing portal configuration
+    console.log("🔍 Getting billing portal configuration...");
+    const configs = await stripe.billingPortal.configurations.list({
+      active: true,
       limit: 1,
     });
-    customerId = subs.data[0]?.customer as string | undefined;
-  } catch {}
-  if (!customerId) {
-    const customers = await stripe.customers.search({
-      query: `metadata['userId']:'${userId}'`, limit: 1,
+    
+    const configuration = configs.data[0]?.id;
+
+    // Create billing portal session
+    console.log("✅ Creating billing portal session...");
+    const portalSession = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${APP_URL}/upload?portal=done`,
+      ...(configuration && { configuration }),
     });
-    customerId = customers.data[0]?.id;
+
+    console.log(`✅ Billing portal session created: ${portalSession.id}`);
+    
+    return NextResponse.redirect(portalSession.url, { status: 303 });
+    
+  } catch (error: any) {
+    console.error("❌ Billing portal error:", error);
+    
+    return NextResponse.redirect(
+      new URL(`/upload?error=${encodeURIComponent(error.message)}`, url.origin),
+      { status: 303 }
+    );
   }
-  if (!customerId) {
-    const c = await stripe.customers.create({ metadata: { userId } });
-    customerId = c.id;
-  }
-
- 
-  const active = await stripe.billingPortal.configurations.list({ active: true, limit: 1 });
-  const configuration = active.data[0]?.id;
-
-  const portal = await stripe.billingPortal.sessions.create({
-    customer: customerId!,
-    configuration,
-    return_url: `${APP_URL}/upload?portal=done`,
-  });
-
-  return NextResponse.redirect(portal.url, { status: 303 });
 }

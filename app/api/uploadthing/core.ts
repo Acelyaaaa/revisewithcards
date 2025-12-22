@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 const f = createUploadthing();
 
 export const ourFileRouter = {
-  pdfUploader: f({ pdf: { maxFileSize: "8MB" } })
+  pdfUploader: f({ pdf: { maxFileSize: "16MB" } })
     .middleware(async () => {
       const { userId } = await auth(); // must await
       if (!userId) throw new Error("Unauthorized");
