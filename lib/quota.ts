@@ -4,7 +4,7 @@ import { sql } from "@/lib/db";
 const FREE_LIMIT = parseInt(process.env.QUOTA_FREE_LIMIT ?? "5", 10);
 const PREMIUM_LIMIT = parseInt(process.env.QUOTA_PREMIUM_LIMIT ?? "50", 10);
 
-// Bypass in dev or when explicitly told to
+
 const IS_DEV_BYPASS =
   process.env.NODE_ENV !== "production" || process.env.QUOTA_DEV_BYPASS === "1";
 

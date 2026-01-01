@@ -4,15 +4,35 @@ import { auth } from "@clerk/nextjs/server";
 const f = createUploadthing();
 
 export const ourFileRouter = {
-  pdfUploader: f({ pdf: { maxFileSize: "16MB" } })
+  pdfUploader: f({ 
+    pdf: { 
+      maxFileSize: "16MB",
+      maxFileCount: 1,
+    } 
+  })
     .middleware(async () => {
-      const { userId } = await auth(); // must await
-      if (!userId) throw new Error("Unauthorized");
+      const { userId } = await auth();
+      
+      // Debug logging
+      console.log("[UploadThing] Middleware called, userId:", userId);
+      
+      if (!userId) {
+        console.error("[UploadThing] No userId found!");
+        throw new Error("Unauthorized");
+      }
+      
       return { userId };
     })
-    .onUploadComplete(async ({ file }) => {
+    .onUploadComplete(async ({ metadata, file }) => {
+      console.log("[UploadThing] Upload complete!");
+      console.log("[UploadThing] File URL:", file.url);
+      console.log("[UploadThing] Uploaded by:", metadata.userId);
       
-      return { ufsUrl: file.ufsUrl, key: file.key, name: file.name };
+      return { 
+        uploadedBy: metadata.userId,
+        url: file.url,
+        name: file.name,
+      };
     }),
 } satisfies FileRouter;
 

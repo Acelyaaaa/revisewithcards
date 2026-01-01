@@ -46,7 +46,7 @@ export async function generateFlashcardsFromUrl({
 
     // quota checks
     const okQuota = await checkQuota(userId);
-    const status = await getQuotaStatus(userId); // we also want the user's plan
+    const status = await getQuotaStatus(userId);
     if (!okQuota) {
       return {
         success: false,
@@ -69,26 +69,61 @@ export async function generateFlashcardsFromUrl({
     const text = await extractPdfTextFromBuffer(bytes);
     if (!text.trim()) return { success: false, message: "Could not extract text from PDF" };
 
-    // Fresh random seed + higher temp on regenerate + avoid previous questions
-    const seed = Math.floor(Math.random() * 2_147_483_647);
-    const cards = await generateFlashcardsFromText(text, count, {
-      avoidQuestions: Array.from(new Set(avoidQuestions)),
-      mode: regenerate ? "regenerate" : "default",
-      temperature: regenerate ? 0.9 : 0.35,
-      minAnswerWords: FortyToOneTwenty.min,
-      maxAnswerWords: FortyToOneTwenty.max,
-      seed,
-    });
+    // RETRY LOGIC FOR REGENERATION
+    let cards;
+    let attempts = 0;
+    const maxAttempts = regenerate ? 2 : 1; // Retry twice for regeneration
+    
+    while (attempts < maxAttempts) {
+      try {
+        const seed = Math.floor(Math.random() * 2_147_483_647) + attempts;
+        
+        cards = await generateFlashcardsFromText(text, count, {
+          avoidQuestions: Array.from(new Set(avoidQuestions)),
+          mode: regenerate ? "regenerate" : "default",
+          temperature: regenerate ? 0.9 : 0.35,
+          minAnswerWords: FortyToOneTwenty.min,
+          maxAnswerWords: FortyToOneTwenty.max,
+          seed,
+        });
+        
+        // If we got valid cards, break out of retry loop
+        if (cards && cards.length > 0) {
+          break;
+        }
+      } catch (e: any) {
+        attempts++;
+        console.error(`Generation attempt ${attempts} failed:`, e.message);
+        
+        // If this is the last attempt, throw the error
+        if (attempts >= maxAttempts) {
+          throw e;
+        }
+        
+        // Wait a bit before retrying (only for regeneration)
+        if (regenerate) {
+          console.log(`Retrying regeneration (attempt ${attempts + 1}/${maxAttempts})...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+    }
+
+    if (!cards || cards.length === 0) {
+      return { success: false, message: "Failed to generate flashcards" };
+    }
 
     // Premium regenerates do NOT count; free regenerates DO.
     if (!(status.plan === "premium" && regenerate)) {
       await incrementQuota(userId);
     }
 
-    return { success: true, data: { fileName, cards } };
-  } catch (e) {
+    return { success: true, data: { fileName, cards, fileUrl } };
+  } catch (e: any) {
     console.error("Error generating flashcards:", e);
-    return { success: false, message: "An unexpected error occurred" };
+    return { 
+      success: false, 
+      message: e.message || "An unexpected error occurred" 
+    };
   }
 }
 
@@ -117,9 +152,9 @@ export async function saveFlashcardsAction(params: { fileName: string; cards: Fl
     revalidatePath("/summaries");
     const row = Array.isArray(saved) ? saved[0] : saved;
     return { success: true, data: { id: row?.id ?? "unknown" } };
-  } catch (e) {
+  } catch (e: any) {
     console.error("Error saving flashcards:", e);
-    return { success: false, message: "Failed to save flashcards" };
+    return { success: false, message: e.message || "Failed to save flashcards" };
   }
 }
 

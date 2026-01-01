@@ -275,7 +275,7 @@ export default function UploadForm() {
   );
 }
 
-/** count how many items two arrays share (case-insensitive) */
+
 function overlapCount(a: string[], b: string[]) {
   const setA = new Set(a.map((s) => s.toLowerCase()));
   let n = 0;
