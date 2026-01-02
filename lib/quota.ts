@@ -6,7 +6,7 @@ const PREMIUM_LIMIT = parseInt(process.env.QUOTA_PREMIUM_LIMIT ?? "50", 10);
 
 
 const IS_DEV_BYPASS =
-  process.env.NODE_ENV !== "production" || process.env.QUOTA_DEV_BYPASS === "1";
+  process.env.NODE_ENV !== "production" && process.env.QUOTA_DEV_BYPASS === "1";
 
 export async function checkQuota(userId: string): Promise<boolean> {
   if (IS_DEV_BYPASS) return true;
