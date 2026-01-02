@@ -9,7 +9,7 @@ export const metadata = {
 export default function PricingPage() {
   return (
     <div className="relative w-full">
-      {/* subtle background like the home */}
+      
       <BgGradient className="opacity-40" />
       <PricingSection />
     </div>

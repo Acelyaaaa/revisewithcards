@@ -10,12 +10,11 @@ import { redirect } from "next/navigation";
 export default async function Home() {
   const { userId } = await auth();
 
-  // ⬇ Go straight to Upload if signed in
   if (userId) {
     redirect("/upload");
   }
 
-  // Public landing
+  // Public landing page
   return (
     <div className="relative w-full">
       <BgGradient />

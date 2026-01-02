@@ -150,7 +150,6 @@
   .will-change-transform { will-change: transform; }
 }
 
-/* ---- Scroll-reveal (CSS View Timelines) ---- */
 @supports (animation-timeline: view()) {
   @keyframes reveal-up   { from { opacity:0; transform: translateY(24px) } to { opacity:1; transform:none } }
   @keyframes reveal-zoom { from { opacity:0; transform: scale(.96) }       to { opacity:1; transform:none } }

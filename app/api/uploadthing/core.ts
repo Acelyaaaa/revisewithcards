@@ -13,7 +13,7 @@ export const ourFileRouter = {
     .middleware(async () => {
       const { userId } = await auth();
       
-      // Debug logging
+     
       console.log("[UploadThing] Middleware called, userId:", userId);
       
       if (!userId) {

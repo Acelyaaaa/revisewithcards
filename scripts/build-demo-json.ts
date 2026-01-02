@@ -11,7 +11,7 @@ async function main() {
   const text = await extractPdfTextFromBuffer(bytes);
 
   const cards = await generateFlashcardsFromText(text, 10, {
-    // slightly longer answers for the demo
+    
     minAnswerWords: 40,
     maxAnswerWords: 120,
     temperature: 0.4,

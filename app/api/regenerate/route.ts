@@ -42,7 +42,7 @@ export async function POST(req: Request) {
   const text = await extractPdfTextFromBuffer(buf);
   if (!text.trim()) return NextResponse.json({ error: "Empty PDF text" }, { status: 400 });
 
-  // Use random seed to vary results even through the API
+  
   const flashcards = await generateFlashcardsFromText(text, count, {
     temperature: 0.4,
     seed: Math.floor(Math.random() * 2_147_483_647),

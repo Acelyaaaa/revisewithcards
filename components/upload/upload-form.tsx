@@ -79,7 +79,7 @@ export default function UploadForm() {
         return;
       }
 
-      // UploadThing v8+: use ufsUrl; fallback to url for older versions
+      
       const fileUrl = (res[0] as any).ufsUrl ?? (res[0] as any).url;
       if (!fileUrl || typeof fileUrl !== "string") {
         toast.error("Could not retrieve file URL");
@@ -143,11 +143,7 @@ export default function UploadForm() {
     }
   }
 
-  /**
-   * Regenerate: ask the server for a *new* set.
-   * Sends the current questions as an avoid-list so the LLM picks different ones.
-   * If overlap is still high, try one more time with a larger avoid list.
-   */
+ 
   async function handleRegenerate() {
     if (!lastFileUrl) {
       toast.error("No file to regenerate from");
@@ -183,7 +179,7 @@ export default function UploadForm() {
 
       let fresh = gen.data!.cards;
 
-      // If the overlap is still too high, try once more with a bigger avoid set
+     
       const overlap = overlapCount(previous, fresh.map((c) => c.question));
       if (overlap >= 8) {
         const biggerAvoid = Array.from(
@@ -202,7 +198,7 @@ export default function UploadForm() {
 
       setCards(fresh);
       toast.success("New flashcards generated!");
-      // FlashcardGrid resets its internal index because the cards array reference changed
+     
     } catch (e) {
       console.error(e);
       toast.error("Unexpected error during regeneration");

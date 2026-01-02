@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   try {
     console.log(`🔍 Finding Stripe customer for user: ${userId}`);
     
-    // Method 1: Check our database first
+    
     let customerId: string | null = null;
     
     try {
@@ -44,7 +44,7 @@ export async function GET(req: Request) {
       console.error("❌ Database query failed:", dbError);
     }
 
-    // Method 2: Search Stripe by active subscriptions
+    
     if (!customerId) {
       console.log("🔍 Searching Stripe for active subscriptions...");
       try {
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // Method 3: Search Stripe customers by userId
+   
     if (!customerId) {
       console.log("🔍 Searching Stripe customers...");
       try {
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // Method 4: Create new customer if none exists
+   
     if (!customerId) {
       console.log("➕ Creating new Stripe customer...");
       const customer = await stripe.customers.create({
@@ -89,7 +89,6 @@ export async function GET(req: Request) {
       customerId = customer.id;
       console.log(`✅ Created new customer: ${customerId}`);
       
-      // Update our database
       try {
         await sql`
           INSERT INTO user_quotas (userId, stripeCustomerId, plan)
@@ -103,7 +102,7 @@ export async function GET(req: Request) {
       }
     }
 
-    // Get active billing portal configuration
+    
     console.log("🔍 Getting billing portal configuration...");
     const configs = await stripe.billingPortal.configurations.list({
       active: true,
@@ -112,7 +111,7 @@ export async function GET(req: Request) {
     
     const configuration = configs.data[0]?.id;
 
-    // Create billing portal session
+    
     console.log("✅ Creating billing portal session...");
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: customerId,

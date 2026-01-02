@@ -16,7 +16,7 @@ export function rateLimit(options: RateLimitOptions): RateLimitResult {
       const now = Date.now();
       const windowStart = now - options.interval;
 
-      // Get token history
+      
       const tokenHistory = tokens.get(token) || [];
       
       // Filter out old requests
@@ -29,7 +29,7 @@ export function rateLimit(options: RateLimitOptions): RateLimitResult {
         return false;
       }
 
-      // Add current request
+      
       requestsWithinWindow.push(now);
       tokens.set(token, requestsWithinWindow);
 

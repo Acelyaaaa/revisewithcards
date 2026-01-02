@@ -18,7 +18,7 @@ export default function FlashcardGrid({
 }) {
   const [idx, setIdx] = useState(0);
 
-  // ⬇ Reset to first card whenever a new set arrives
+ 
   useEffect(() => {
     setIdx(0);
   }, [cards]);

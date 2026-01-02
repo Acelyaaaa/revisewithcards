@@ -16,9 +16,8 @@ export default function NewsletterClient() {
     }
     try {
       setBusy(true);
-      // If you later add a backend route, POST there instead:
-      // await fetch("/api/newsletter/subscribe", { method: "POST", body: JSON.stringify({ email }) });
-      await new Promise((r) => setTimeout(r, 600)); // demo
+      
+      await new Promise((r) => setTimeout(r, 600)); 
       toast.success("Subscribed! Thanks for joining ✨");
       setEmail("");
     } catch (e) {

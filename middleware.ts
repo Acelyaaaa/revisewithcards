@@ -1,28 +1,30 @@
-// middleware.ts
-import { NextResponse } from "next/server";
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 
-// Only these routes require sign-in
-const isProtectedRoute = createRouteMatcher([
-  "/upload(.*)",
-  "/summaries(.*)",
+// Public routes that don't require authentication
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/pricing(.*)',
+  '/api/webhook(.*)',
+  '/api/uploadthing(.*)',
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  const { userId, redirectToSignIn } = await auth();
+export default clerkMiddleware(async (auth, request) => {
 
-  // If the user hits a protected route and isn't signed in, send them to Clerk
-  if (isProtectedRoute(req) && !userId) {
-    return redirectToSignIn({ returnBackUrl: req.url });
+  if (isPublicRoute(request)) {
+    return;
   }
-
-  // Otherwise continue as normal (you can add headers here if you want)
-  return NextResponse.next();
+  
+  
+  await auth.protect();
 });
 
-// Run the middleware for everything except Next internals, static files and the Stripe webhook.
 export const config = {
   matcher: [
-    "/((?!_next|.*\\..*|favicon.ico|api/stripe/webhook).*)",
+    
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    
+    '/(api|trpc)(.*)',
   ],
 };

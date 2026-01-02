@@ -9,10 +9,10 @@ export default function HeroSection() {
       <div className="reveal reveal-zoom relative p-[1px] overflow-hidden rounded-full bg-gradient-to-r from-rose-200 via-rose-500 to-rose-800 animate-gradient-x group">
         <Badge
           variant="secondary"
-          className="relative px-6 py-2 text-base font-medium bg-white rounded-full group-hover:bg-gray-50 transition-colors duration-200"
+          className="relative px-6 py-2 text-base font-medium bg-white/95 backdrop-blur-sm rounded-full group-hover:bg-white/70 transition-all duration-300"
         >
           <Sparkles className="h-8 w-8 mr-2 text-rose-600 animate-pulse" />
-          <p className="text-base text-rose-600">Powered by AI</p>
+          <p className="text-base text-rose-600 font-semibold">Powered by AI</p>
         </Badge>
       </div>
 
