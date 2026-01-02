@@ -1,9 +1,4 @@
--- Production-Ready Database Schema for RevieCards
--- Run this in your Neon console to create/update all tables
 
--- =====================================================
--- USER QUOTAS & SUBSCRIPTIONS (UNIFIED)
--- =====================================================
 CREATE TABLE IF NOT EXISTS user_quotas (
   id BIGSERIAL PRIMARY KEY,
   userId TEXT NOT NULL UNIQUE,
@@ -16,12 +11,12 @@ CREATE TABLE IF NOT EXISTS user_quotas (
   updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for fast lookups
+
 CREATE INDEX IF NOT EXISTS idx_user_quotas_userId ON user_quotas(userId);
 CREATE INDEX IF NOT EXISTS idx_user_quotas_plan ON user_quotas(plan);
 CREATE INDEX IF NOT EXISTS idx_user_quotas_stripe ON user_quotas(stripeCustomerId);
 
--- Auto-update timestamp trigger
+
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -35,9 +30,7 @@ CREATE TRIGGER update_user_quotas_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- =====================================================
--- USER FLASHCARDS
--- =====================================================
+
 CREATE TABLE IF NOT EXISTS user_flashcards (
   id BIGSERIAL PRIMARY KEY,
   userId TEXT NOT NULL,
@@ -48,24 +41,20 @@ CREATE TABLE IF NOT EXISTS user_flashcards (
   updatedAt TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Indexes for fast lookups
 CREATE INDEX IF NOT EXISTS idx_user_flashcards_userId ON user_flashcards(userId);
 CREATE INDEX IF NOT EXISTS idx_user_flashcards_createdAt ON user_flashcards(createdAt DESC);
 
--- Auto-update timestamp trigger
+
 CREATE TRIGGER update_user_flashcards_updated_at
     BEFORE UPDATE ON user_flashcards
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- =====================================================
--- MIGRATION: Merge old user_subscriptions into user_quotas
--- =====================================================
--- If you have old user_subscriptions table, migrate data
+
 DO $$
 BEGIN
     IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'user_subscriptions') THEN
-        -- Merge data from user_subscriptions into user_quotas
+        -
         INSERT INTO user_quotas (userId, plan, stripeCustomerId, stripeSubscriptionId, createdAt, updatedAt)
         SELECT 
             user_id,
@@ -83,16 +72,13 @@ BEGIN
             stripeCustomerId = EXCLUDED.stripeCustomerId,
             stripeSubscriptionId = EXCLUDED.stripeSubscriptionId;
         
-        -- Archive old table (don't delete in case you need to rollback)
+
         ALTER TABLE user_subscriptions RENAME TO user_subscriptions_backup;
         
         RAISE NOTICE 'Migrated user_subscriptions to user_quotas';
     END IF;
 END $$;
 
--- =====================================================
--- VERIFY TABLES
--- =====================================================
 DO $$
 BEGIN
     RAISE NOTICE 'Database schema updated successfully!';
