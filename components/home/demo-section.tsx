@@ -27,7 +27,7 @@ export default function DemoSection() {
 
           <div className="reveal reveal-up text-center mb-12">
             <h3 className="font-bold text-3xl max-w-2xl mx-auto px-4 sm:px-6">
-              Watch how Revisecards transforms{" "}
+              Watch how Revisewithcards transforms{" "}
               <span className="bg-gradient-to-r from-rose-500 to-red-700 bg-clip-text text-transparent">
                 this academic PDF
               </span>{" "}

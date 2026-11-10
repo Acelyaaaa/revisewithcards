@@ -14,7 +14,7 @@ export default function CTASection() {
                 Ready to Save Hours of Reading Time?
               </h2>
               <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl md:leading-relaxed lg:text-base lg:leading-relaxed xl:text-xl xl:leading-relaxed dark:text-gray-400">
-                Transforming lengthy documents to PDFs starts with Revisecards.
+                Transforming long documents to PDFs starts with Revisewithcards.
               </p>
             </div>
             <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">

@@ -14,7 +14,7 @@ export default async function Home() {
     redirect("/upload");
   }
 
-  // Public landing page
+  
   return (
     <div className="relative w-full">
       <BgGradient />

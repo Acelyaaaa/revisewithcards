@@ -28,7 +28,7 @@ export default function HowItWorksSection() {
         <div className="text-center mb-16">
           <h2 className="reveal reveal-up font-bold text-xl uppercase mb-4 text-rose-500">How it works</h2>
           <h3 className="reveal reveal-up font-bold text-3xl max-w-2xl mx-auto">
-            Transform any PDF into easy-to-digest flashcards in three simple steps
+            Transform any PDF into easy to read flashcards in three simple steps
           </h3>
         </div>
 

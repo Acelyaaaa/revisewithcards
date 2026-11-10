@@ -11,12 +11,12 @@ export default function Footer() {
     <footer className="border-t bg-white/70 backdrop-blur">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10">
 
-        {/* Brand + CTA */}
+        
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-8 border-b">
           <div className="flex items-center gap-3">
             <FileText className="h-6 w-6 text-rose-600" />
             <div>
-              <p className="font-semibold">Revisecards</p>
+              <p className="font-semibold">Revisewithcards</p>
               <p className="text-sm text-gray-600">Turn PDFs into concise flashcards.</p>
             </div>
           </div>
@@ -26,7 +26,7 @@ export default function Footer() {
                 href="/sign-in"
                 className="inline-flex items-center rounded-xl bg-gradient-to-r from-slate-900 to-rose-500 px-4 py-2 text-white hover:opacity-90"
               >
-                Try Revisecards
+                Try Revisewithcards
               </Link>
             </SignedOut>
             <SignedIn>
@@ -85,7 +85,7 @@ export default function Footer() {
 
         
         <div className="pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-gray-600">
-          <p>© {year} Revisecards. All rights reserved.</p>
+          <p>© {year} Revisewithcards. All rights reserved.</p>
           <p className="text-center sm:text-right">
             We generate flashcards with AI. Your uploads are not used to train external models.
           </p>
