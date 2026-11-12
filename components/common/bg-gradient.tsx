@@ -1,4 +1,4 @@
-// components/common/bg-gradient.tsx
+
 import { cn } from "@/lib/utils";
 
 export default function BgGradient({ className }: { className?: string }) {

@@ -9,7 +9,7 @@ import Image from "next/image";
 export default function Header() {
   return (
     <nav className="container flex items-center justify-between py-4 px-2 lg:px-8 mx-auto">
-      {/* Brand with Logo */}
+     
       <div className="flex flex-1">
         <NavLink href="/upload" className="flex items-center gap-2 shrink-0 group">
           

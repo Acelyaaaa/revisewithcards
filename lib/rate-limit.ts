@@ -1,4 +1,4 @@
-// lib/rate-limit.ts
+
 interface RateLimitOptions {
   interval: number;
   uniqueTokenPerInterval: number;
@@ -19,12 +19,12 @@ export function rateLimit(options: RateLimitOptions): RateLimitResult {
       
       const tokenHistory = tokens.get(token) || [];
       
-      // Filter out old requests
+      
       const requestsWithinWindow = tokenHistory.filter((timestamp) => {
         return timestamp > windowStart;
       });
 
-      // Check if limit exceeded
+      
       if (requestsWithinWindow.length >= limit) {
         return false;
       }

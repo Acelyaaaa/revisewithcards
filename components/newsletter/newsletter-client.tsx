@@ -31,7 +31,7 @@ export default function NewsletterClient() {
     <section className="max-w-xl mx-auto px-4 py-16">
       <h1 className="text-3xl font-bold mb-2 text-center">Join the newsletter</h1>
       <p className="text-center text-gray-600 mb-8">
-        Short, occasional updates about new features and study tips.
+        Short and occasional updates about new features and study tips.
       </p>
 
       <form onSubmit={submit} className="flex gap-3">

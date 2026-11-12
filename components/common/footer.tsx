@@ -40,7 +40,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Columns */}
+       
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 py-8">
           <div>
             <h4 className="font-semibold mb-3">Product</h4>

@@ -35,7 +35,7 @@ export default function FlashcardGrid({
 
   return (
     <div className="w-full max-w-2xl mx-auto">
-      {/* Toolbar */}
+      
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={prev} disabled={!canPrev} className="gap-1">
