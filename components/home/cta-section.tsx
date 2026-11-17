@@ -11,7 +11,7 @@ export default function CTASection() {
           <div className="flex flex-col items-center justify-center space-y-4 text-center">
             <div className="space-y-2">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                Ready to Save Hours of Reading Time?
+                Ready to save hours of reading time, improve your learning and boost your productivity?
               </h2>
               <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl md:leading-relaxed lg:text-base lg:leading-relaxed xl:text-xl xl:leading-relaxed dark:text-gray-400">
                 Transforming long documents to PDFs starts with Revisewithcards.

@@ -154,7 +154,7 @@ export async function generateFlashcardsFromText(
   const avoidBlock =
     avoidQuestions && avoidQuestions.length
       ? `
-🚫 CRITICAL: DO NOT generate these questions (or paraphrases):
+ CRITICAL: DO NOT generate these questions (or paraphrases):
 ${avoidQuestions.slice(0, 8).map((q, i) => `${i + 1}. ${q.slice(0, 80)}...`).join("\n")}
 
 Generate COMPLETELY DIFFERENT questions exploring OTHER aspects of the material.
@@ -163,7 +163,7 @@ Generate COMPLETELY DIFFERENT questions exploring OTHER aspects of the material.
 
   const regenerateInstructions = isRegenerate
     ? `
-🔄 REGENERATION MODE - IMPORTANT:
+ REGENERATION MODE - IMPORTANT:
 - Generate COMPLETELY NEW questions, NOT variations of previous ones
 - Explore DIFFERENT topics, concepts, and angles from the document
 - Use VARIED question formats: "How does...", "Why is...", "What are the implications of...", "Compare...", "Analyze..."
@@ -173,7 +173,7 @@ Generate COMPLETELY DIFFERENT questions exploring OTHER aspects of the material.
 Random Seed: ${rand}
 `
     : `
-📚 INITIAL GENERATION MODE:
+ INITIAL GENERATION MODE:
 - Focus on the MOST IMPORTANT concepts and key takeaways
 - Cover main ideas, critical definitions, and fundamental principles
 - Ensure questions test deep understanding of core material
@@ -189,20 +189,20 @@ ${avoidBlock}
 TASK: Create EXACTLY ${targetCount} high-quality study flashcards from the text below.
 
 CRITICAL OUTPUT REQUIREMENTS:
-⚠️ You MUST return ONLY a valid JSON array
-⚠️ NO markdown code blocks (no \`\`\`json)
-⚠️ NO explanations or commentary
-⚠️ Start with [ and end with ]
-⚠️ Each flashcard must be complete with both question and answer
+You MUST return ONLY a valid JSON array
+NO markdown code blocks (no \`\`\`json)
+ NO explanations or commentary
+ Start with [ and end with ]
+ Each flashcard must be complete with both question and answer
 
 STRICT REQUIREMENTS:
-✅ Return ONLY valid JSON array
-✅ Each flashcard must have "question" and "answer" fields
-✅ Questions must be clear, specific, and test understanding
-✅ Answers must be ${minAnswerWords}-${maxAnswerWords} words long
-✅ NO duplicate or paraphrased questions
-✅ Use ONLY information from the provided text
-✅ All questions must be unique and cover different aspects
+ Return ONLY valid JSON array
+ Each flashcard must have "question" and "answer" fields
+ Questions must be clear, specific, and test understanding
+ Answers must be ${minAnswerWords}-${maxAnswerWords} words long
+ NO duplicate or paraphrased questions
+ Use ONLY information from the provided text
+ All questions must be unique and cover different aspects
 
 OUTPUT FORMAT - Copy this structure EXACTLY:
 [
